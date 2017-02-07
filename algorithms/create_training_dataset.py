@@ -30,11 +30,6 @@ import my_image_io as io
 
 
 
-####  MY PROJECTOR CLASS
-import class_projectors_grid as cpj 
-
-
-
 
 ####  NNFBP UTILITIES
 import utils
@@ -58,12 +53,15 @@ myint = np.int
 ##########################################################
 ##########################################################
 
-def reconstr_filter_custom( sino , angles , ctr , filt_custom , picked ):  
-    ##  Load gridding projector class
-    tp = cpj.projectors( sino.shape[1] , angles , ctr=ctr , filt=filt_custom )
-    
+def reconstr_filter_custom( sino , angles , ctr , filt_custom , picked ):
+    ##  Prepare filter
+    n         = len( filt_custom )
+    nh        = np.int( 0.5 * n )
+    filt      = np.zeros( len( filt_custom ) , dtype=myfloat )
+    filt[::2] = filt_custom[:nh]
+      
     ##  Reconstruction
-    reco = tp.fbp( sino )
+    reco = utils.fbp( sino , angles , [ctr,0.0] , filt )
     
     ##  Pick up only selected pixels
     reco = reco[ picked ]
@@ -130,14 +128,10 @@ def main():
     ##  Create array of projection angles
     angles = utils.create_projection_angles( nang=nang )
     
-        
-    ##  Load gridding projectors
-    tp = cpj.projectors( npix , angles , ctr=ctr_hq , filt=filt ) 
- 
-    
+     
     ##  Compute number of views for low-quality training sinograms
-    nang_new = np.int( nang / ( factor_down * 1.0 ) )
-    print( '\nDownsampling factor for training sinograms: ' , factor_down )
+    factor = nang / ( nang_lq * 1.0 )
+    print( '\nDownsampling factor for training sinograms: ' , factor )
     
     
     ##  Create customized filters
@@ -156,14 +150,15 @@ def main():
     
     ncores_avail = mproc.cpu_count
     if ncores > ncores_avail:
-        ncores =  ncores_avail     
+        ncores =  ncores_avail 
+        
     
     for i in range( nfiles ):
         ##  Read high-quality sinogram
-        sino_hq = io.readImage( input_path + file_list[0][i] ).astype( myfloat )
+        sino_hq = io.readImage( input_path + file_list[0][i] ).astype( myfloat ) 
 
         ##  Reconstruct high-quality sinogram with standard filter
-        reco_hq = tp.fbp( sino_hq )            
+        reco_hq = utils.fbp( sino_hq , angles , [ctr_hq,1.0] , None )            
         
         ##  Create output training array
         train_data = np.zeros( ( npix_train_slice , nfilt+1 ) , dtype=myfloat )
@@ -175,7 +170,7 @@ def main():
         train_data[:,-1] = reco_hq[picked]
         
         ##  Downsample sinogram
-        sino_lq , angles_lq = utils.downsample_sinogram_angles( sino_hq , angles , nang_new )
+        sino_lq , angles_lq = utils.downsample_sinogram_angles( sino_hq , angles , nang_lq )
         
         ##  Reconstruct low-quality sinograms with customized filters
         pool = mproc.Pool( processes=ncores )
@@ -193,10 +188,9 @@ def main():
         filename = file_list[0][i]
         fileout  = train_path + filename[:len(filename)-4] + '_train.npy'
         np.save( fileout , train_data )
+        print( '\nTraining data saved in:\n', fileout ) 
         
-    print( ' done!' ) 
-
-    print( '\nTraining data saved in:\n', fileout ,'\n' )    
+    print( '\n' )   
     
 
 

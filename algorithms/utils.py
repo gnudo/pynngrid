@@ -28,6 +28,13 @@ except:
 
 
     
+
+####  MY GRIDDING MODULE
+sys.path.append( '../gridding_module/' )
+import gridrec as gr
+
+
+
     
 ####  MY VARIABLE TYPE
 myint   = np.int
@@ -296,34 +303,32 @@ def downsample_sinogram_angles( sino , angles , nproj ):
     angles_down = angles[ii]
 
     return sino_down , angles_down
-    
+  
     
     
     
 ##########################################################
 ##########################################################
 ####                                                  ####
-####                 PROJECTION FILTERING             ####
+####        Analytical gridding reconstruction        ####
 ####                                                  ####
 ##########################################################
 ##########################################################
 
-def filter_proj_custom( sino , filt ):
-    ##  Get dimensions
-    nang , npix = sino.shape
-    nfreq = len( filt )
+def fbp( sino , angles , params , filt ):
+    params = np.array( params )
+    if filt is None:
+        filt = np.zeros( 1 , dtype=myfloat )
     
+    reco = gr.backproj( sino.astype( myfloat ) , angles.astype( myfloat ) , 
+                        params.astype( myfloat ) , filt.astype( myfloat ) , None )
     
-    ##  Zero-pad projections    
-    sino_pad = np.concatenate( ( sino , np.zeros( ( nang , nfreq - npix ) ) ) , axis=1 ) 
-            
+    return reco
     
-    ##  Filtering in Fourier space    
-    for i in range( nang ):
-        sino_pad[i,:] = np.real( np.fft.ifft( np.fft.fft( sino_pad[i,:] ) * filt ) )                
 
 
-    ##  Replace values in the original array
-    sino[:,:] = sino_pad[:,:npix]
 
-    return sino
+
+
+
+    
