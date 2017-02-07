@@ -61,3 +61,43 @@ if compile is True:
     os.chdir( path )
     os.system( 'python compile.py' )
     os.chdir( curr_dir )
+
+    os.chdir( 'data/' )
+    os.system( 'unzip sl3d_128.zip' )
+    os.system( 'rm sl3d_128.zip' )
+    os.system( 'unzip sl3d_128_ang0256.zip' )
+    os.system( 'rm sl3d_128_ang0256.zip' )
+    os.system( 'unzip test_data.zip' )
+    os.system( 'rm test_data.zip' )    
+
+
+else:
+    os.chdir( curr_dir ) 
+    os.chdir( 'data/' )
+    if os.path.exists( 'sl3d_128/' ):
+        os.system( 'zip -r sl3d_128.zip sl3d_128/' )
+        shutil.rmtree( 'sl3d_128' )
+    if os.path.exists( 'sl3d_128_ang0256/' ):
+        os.system( 'zip -r sl3d_128_ang0256.zip sl3d_128_ang0256/' )    
+        shutil.rmtree( 'sl3d_128_ang0256' )
+    os.system( 'zip -r test_data.zip *.DMP' )
+    os.system( 'rm -r train' ) 
+    os.system( 'rm *.DMP' )     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

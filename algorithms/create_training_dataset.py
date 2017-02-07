@@ -110,7 +110,7 @@ def main():
     file_list.append( sorted( glob.glob( '*' + input_files_hq + '*' ) ) )
     os.chdir( cwd )
     
-    nfiles = len( file_list )
+    nfiles = len( file_list[0] )
     if nfiles == 0:
         sys.exit( '\nERROR: No file *' + input_files_hq + '* found!\n' )
         
@@ -182,7 +182,7 @@ def main():
         results = [ pool.apply_async( reconstr_filter_custom , 
                                       args=( sino_lq , angles_lq , ctr_hq , filt_custom[j,:] , picked ) ) \
                                       for j in range( nfilt ) ]
-        train_data[:,:nfilt] = np.array( [ res.get() for res in results ] )
+        train_data[:,:nfilt] = np.array( [ res.get() for res in results ] ).reshape( npix_train_slice , nfilt )
         pool.close()
         pool.join()
         
@@ -196,7 +196,7 @@ def main():
         
     print( ' done!' ) 
 
-    print( '\nTraining data saved in:\n', train_path,'\n' )    
+    print( '\nTraining data saved in:\n', fileout ,'\n' )    
     
 
 
