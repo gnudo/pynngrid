@@ -18,6 +18,7 @@ import datetime
 import argparse
 import sys
 import os
+import glob
 import numpy as np
 import multiprocessing as mproc    
 
@@ -51,15 +52,30 @@ myint = np.int
 ##########################################################
 ##########################################################
 ####                                                  ####
+####                        SIGMOID                   ####
+####                                                  ####
+##########################################################
+##########################################################
+
+def sigmoid(x):
+    return 1. / (1. + np.exp(-x))
+
+    
+    
+
+##########################################################
+##########################################################
+####                                                  ####
 ####             MULTI-THREAD RECONSTRUCTION          ####
 ####               WITH CUSTOMIZED FILTERS            ####
 ####                                                  ####
 ##########################################################
 ##########################################################
 
-def reconstr_nnfbp( filein , angle , ctr , weights , offsets , minIn , maxIn , NHidden , filters ):  
+def reconstr_nnfbp( target_path , output_path , filein , angles , ctr , 
+                    weights , offsets , minIn , maxIn , NHidden , filters ):  
     ##  Read low-quality sinogram
-    sino = io.readImage( input_path + filein ).astype( myfloat )
+    sino = io.readImage( target_path + filein ).astype( myfloat )
     nang , npix = sino.shape
     
         
@@ -87,6 +103,7 @@ def reconstr_nnfbp( filein , angle , ctr , weights , offsets , minIn , maxIn , N
     ext     = filein[len(filein)-4:]
     fileout = output_path + filein[:len(filein)-4] + '_nnreco' + ext
     io.writeImage( fileout , reco )
+    print( '\nSaving NN-FBP reconstruction in:\n' , fileout )
     
     return
 
@@ -116,7 +133,7 @@ def main():
         sys.exit( '\nERROR: Missing input config file .cfg!\n' )
     else:
         cfg_file = open( sys.argv[1] , 'r' )
-        exec cfg_file
+        exec( cfg_file )
         cfg_file.close()
         
     
@@ -131,10 +148,11 @@ def main():
     target_path = utils.analyze_path( target_path , mode='check' )
     
     os.chdir( target_path )    
-    filein = sorted( glob.glob( '*' + input_files_lq + '*' ) )
+    file_list = []
+    file_list.append( sorted( glob.glob( '*' + input_files_lq + '*' ) ) )
     os.chdir( cwd )
     
-    nfiles = len( filein )
+    nfiles = len( file_list )
     if nfiles == 0:
         sys.exit( '\nERROR: No file *' + input_files_lq + '* found!\n' )
         
@@ -144,7 +162,7 @@ def main():
         
 
     ##  Read one sinogram
-    sino = io.readImage( target_path + filein[0][0] )
+    sino = io.readImage( target_path + file_list[0][0] )
     nang , npix = sino.shape
     
     
@@ -169,21 +187,28 @@ def main():
             filters[i] += basis[j] * fW[i,j]
 
 
-    ##  Reconstruct low-quality sinograms   
+    ##  Reconstruct low-quality sinograms
+    print( '\nNN-FBP reconstruction ....' )
     ncores_avail = mproc.cpu_count
     if ncores > ncores_avail:
         ncores =  ncores_avail     
     
     pool = mproc.Pool( processes=ncores )
     for i in range( nfiles ):
-        pool.apply_async( reconstr_nnfbp , args=( file_list[0][i] , angle , ctr , weights , offsets ,
-                                                  minIn , maxIn , NHidden , filters ) )
+        pool.apply_async( reconstr_nnfbp , args=( target_path , output_path , file_list[0][i] , angles , ctr_lq , 
+                                                  weights , offsets , minIn , maxIn , NHidden , filters  ) )
     pool.close()
-    pool.join()    
+    pool.join() 
+    
+    #for i in range( nfiles ):
+    #    reconstr_nnfbp( target_path , output_path , file_list[0][i] , angles , ctr_lq , 
+    #                    weights , offsets , minIn , maxIn , NHidden , filters )
 
-        
-        
+    print( '\n' )    
 
+    
+    
+        
 ##########################################################
 ##########################################################
 ####                                                  ####

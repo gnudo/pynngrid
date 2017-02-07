@@ -17,12 +17,13 @@ import os , errno
 import math , random
 import shutil
 import glob
+import bisect
 
 try:
     import pywt
     hasPyWt=True
 except:
-    print 'PyWavelets not installed, ring removal not available!'
+    print ( 'PyWavelets not installed, ring removal not available!' )
     hasPyWt=False
 
 
@@ -71,7 +72,7 @@ def removeStripesTomoPy(sinogram,level=5,sigma=2.4,wname='db20'):
     # 24/03/2014
     
     if not hasPyWt:
-        print 'PyWavelets not installed, ring removal not available!'
+        print( 'PyWavelets not installed, ring removal not available!' )
         return sinogram
     size = np.max(sinogram.shape)
     if level==None: level = int(np.ceil(np.log2(size)))
@@ -309,18 +310,17 @@ def downsample_sinogram_angles( sino , angles , nproj ):
 
 def filter_proj_custom( sino , filt ):
     ##  Get dimensions
-    nang , npix = x.shape
-    nfreq = len( self.filt )
+    nang , npix = sino.shape
+    nfreq = len( filt )
     
     
     ##  Zero-pad projections    
-    sino_pad = np.concatenate( ( sino , np.zeros( ( nang , 2*nfreq - npix ) ) ) , axis=1 ) 
+    sino_pad = np.concatenate( ( sino , np.zeros( ( nang , nfreq - npix ) ) ) , axis=1 ) 
             
     
     ##  Filtering in Fourier space    
     for i in range( nang ):
-        sino_pad[i,:] = np.real( np.fft.ifft( np.fft.fft( sino_pad[i,:] ) * self.filt ) )                
-        x[:,:] = x_pad[:,:npix
+        sino_pad[i,:] = np.real( np.fft.ifft( np.fft.fft( sino_pad[i,:] ) * filt ) )                
 
 
     ##  Replace values in the original array

@@ -12,6 +12,7 @@
 
 
 ####  PYTHON MODULES
+from __future__ import division , print_function
 import numpy as np
 import warnings
 import random
@@ -60,8 +61,8 @@ class Network(object):
 
         
     def __inittrain(self):
-        '''Initialize training parameters, create actual training and validation
-        sets by picking random pixels from the datasets'''
+        ##  Initialize training parameters, create actual training and validation
+        ##  sets by picking random pixels from the datasets
         self.l1 = 2 * np.random.rand(self.nIn + 1, self.nHid) - 1
         beta = 0.7 * self.nHid ** (1. / (self.nIn))
         l1norm = np.linalg.norm(self.l1)
@@ -93,7 +94,7 @@ class Network(object):
 
         
     def __sigmoid(self, x):
-        '''Sigmoid function'''
+        ##  Sigmoid function
         if hasne:
             return numexpr.evaluate("1./(1.+exp(-x))")
         else:
@@ -101,7 +102,7 @@ class Network(object):
 
             
     def __createFilters(self):
-        '''After training, creates the actual filters and offsets by undoing the scaling.'''
+        ##  After training, creates the actual filters and offsets by undoing the scaling.'''
         self.minL = self.minmax[0]
         self.maxL = self.minmax[1]
         self.minIn = self.minmax[2]
@@ -122,8 +123,8 @@ class Network(object):
 
             
     def __processDataBlock(self, data):
-        ''' Returns output values (``vals``), 'correct' output values (``valOut``) and
-        hidden node output values (``hiddenOut``) from a block of data.'''
+        ##  Returns output values (``vals``), 'correct' output values (``valOut``) and
+        ##  hidden node output values (``hiddenOut``) from a block of data.
         tileM = np.tile(self.minmax[0], (data.shape[0], 1))
         maxmin = np.tile(self.minmax[1] - self.minmax[0], (data.shape[0], 1))
         data[:, 0:self.nIn] = 2 * (data[:, 0:self.nIn] - tileM) / maxmin - 1
@@ -142,7 +143,7 @@ class Network(object):
 
         
     def __getTSE(self, dat):
-        '''Returns the total squared error of a data block'''
+        ##  Returns the total squared error of a data block
         tse = 0.
         for i in xrange(len(dat)):
             data = np.load(dat[i])
@@ -155,8 +156,8 @@ class Network(object):
 
         
     def __setJac2(self):
-        '''Calculates :math:`J^T J` and :math:`J^T e` for the training data.
-        Used for Levenberg-Marquardt method.'''
+        ##  Calculates :math:`J^T J` and :math:`J^T e` for the training data.
+        ##  Used for Levenberg-Marquardt method.
         self.jac2.fill(0)
         self.jacDiff.fill(0)
         for i in xrange(len(self.tD)):
@@ -197,7 +198,7 @@ class Network(object):
 
                 
     def train(self):
-        '''Train the network using the Levenberg-Marquardt method.'''
+        ##  Train the network using the Levenberg-Marquardt method.
         self.__inittrain()
         mu = 100000.
         muUpdate = 10
@@ -254,7 +255,7 @@ class Network(object):
             if(gradSize < 1e-8):
                 break
             tse = newtse
-            print 'Validation set error:', prevValError, 'Training set error:', newtse
+            print( 'Validation set error:', prevValError, 'Training set error:', newtse )
         self.l1 = self.minl1
         self.l2 = self.minl2
         self.valErr = prevValError
@@ -291,14 +292,15 @@ def main():
         
     
     ##  Get training files
-    flist = sorted( glob.glob( train_path + '*.npy') ) 
+    flist  = sorted( glob.glob( train_path + '*.npy') )
+    nfiles = len( flist )
     random.shuffle( flist )
     
     
     ##  Initialize class network
     perc_val = perc_val/100.0
-    nval = int( len( flist ) * perc_val )
-    n = Network( num_hidden_nodes , flist[nval:len(fls)], flist[0:nval])
+    nval = int( nfiles * perc_val )
+    n = Network( num_hidden_nodes , flist[nval:nfiles], flist[0:nval])
 
     
     ##  Launch training
@@ -306,7 +308,9 @@ def main():
     
 
     ##  Save trained filters
-    n.saveToDisk( train_path + file_trained_filters )
+    fileout = train_path + file_trained_filters
+    n.saveToDisk( fileout )
+    print( '\nTrained filters saved in:\n', fileout,'\n\n')
     
     
     

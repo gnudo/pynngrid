@@ -18,6 +18,7 @@ import datetime
 import argparse
 import sys
 import os
+import glob
 import numpy as np
 import multiprocessing as mproc    
 
@@ -57,9 +58,9 @@ myint = np.int
 ##########################################################
 ##########################################################
 
-def reconstr_filter_custom( sino_lq , angle_lq , ctr , filt_custom , picked ):  
+def reconstr_filter_custom( sino , angles , ctr , filt_custom , picked ):  
     ##  Load gridding projector class
-    tp = cpj.projectors( sino_lq.shape[1] , angles_lq , ctr=ctr , filt=filt_custom )
+    tp = cpj.projectors( sino.shape[1] , angles , ctr=ctr , filt=filt_custom )
     
     ##  Reconstruction
     reco = tp.fbp( sino )
@@ -95,7 +96,7 @@ def main():
         sys.exit( '\nERROR: Missing input config file .cfg!\n' )
     else:
         cfg_file = open( sys.argv[1] , 'r' )
-        exec cfg_file
+        exec( cfg_file )
         cfg_file.close()
         
     
@@ -104,11 +105,12 @@ def main():
     
     input_path = utils.analyze_path( input_path , mode='check' )
     
-    os.chdir( input_path )    
-    filein = sorted( glob.glob( '*' + input_files + '*' ) )
+    os.chdir( input_path )
+    file_list = []    
+    file_list.append( sorted( glob.glob( '*' + input_files_hq + '*' ) ) )
     os.chdir( cwd )
     
-    nfiles = len( filein )
+    nfiles = len( file_list )
     if nfiles == 0:
         sys.exit( '\nERROR: No file *' + input_files_hq + '* found!\n' )
         
@@ -116,11 +118,11 @@ def main():
         
     print( '\nInput data folder:\n' , input_path )
     print( '\nTrain data folder:\n' , train_path )
-    print( '\nInput high-quality sinograms:\n' , nfiles )
+    print( '\nInput high-quality sinograms: ' , nfiles )
         
     
     ##  Read one file
-    sino = io.readImage( input_path + filein[0][0] )
+    sino = io.readImage( input_path + file_list[0][0] )
     nang , npix = sino.shape
     print( '\nSinogram(s) with ' , nang ,' views X ' , npix, ' pixels' )
     
@@ -130,7 +132,7 @@ def main():
     
         
     ##  Load gridding projectors
-    tp = cpj.projectors( npix , angles , ctr=ctr_rot , filt=filt ) 
+    tp = cpj.projectors( npix , angles , ctr=ctr_hq , filt=filt ) 
  
     
     ##  Compute number of views for low-quality training sinograms
@@ -141,12 +143,12 @@ def main():
     ##  Create customized filters
     print( '\nCreating customized filters ....' )
     filt_size   = 2 * ( 2**int( np.ceil( np.log2( npix ) ) ) )
-    filt_custom = nnfbp_hf.generateFilterBasis( npix , 2 )
+    filt_custom = utils.generateFilterBasis( filt_size , 2 )
     nfilt       = filt_custom.shape[0]
     
 
     ##  Region of interest to select training data
-    idx = nnfbp_hf.getIDX( npix , roi_l , roi_r , roi_b , roi_t )
+    idx = utils.getIDX( npix , roi_l , roi_r , roi_b , roi_t )
     
     
     ##  Create training dataset 
@@ -167,22 +169,25 @@ def main():
         train_data = np.zeros( ( npix_train_slice , nfilt+1 ) , dtype=myfloat )
         
         ##  Randomly select training pixels
-        picked = nnfbp_hf.getPickedIndices( idx , npix_train_slice )
+        picked = utils.getPickedIndices( idx , npix_train_slice )
         
         ##  Save validation data
         train_data[:,-1] = reco_hq[picked]
         
         ##  Downsample sinogram
-        sino_lq , angle_lq = utils.downsample_sinogram_angles( sino_hq , nang_new )
+        sino_lq , angles_lq = utils.downsample_sinogram_angles( sino_hq , angles , nang_new )
         
         ##  Reconstruct low-quality sinograms with customized filters
         pool = mproc.Pool( processes=ncores )
         results = [ pool.apply_async( reconstr_filter_custom , 
-                                      args=( sino_lq , angle_lq , ctr , filt_custom[j,:] , picked ) ) \
+                                      args=( sino_lq , angles_lq , ctr_hq , filt_custom[j,:] , picked ) ) \
                                       for j in range( nfilt ) ]
         train_data[:,:nfilt] = np.array( [ res.get() for res in results ] )
         pool.close()
         pool.join()
+        
+        #for j in range( nfilt ):
+        #    train_data[:,j] = reconstr_filter_custom( sino_lq , angles_lq , ctr_hq , filt_custom[j,:] , picked )
 
         ##  Save training data
         filename = file_list[0][i]

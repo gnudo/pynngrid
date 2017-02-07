@@ -64,10 +64,14 @@ class projectors:
         
         ##  Filter flag
         self.filt_ext = False
+        
         if filt not in filter_list:
             self.filt_ext = True
             self.filt     = filt
             
+        else:
+            filt = np.argwhere( filter_list == filt )[0][0]
+
 
         ##  Setting for forward nad backprojection
         param_nofilt = np.array( [ ctr , 0 , 0 , oversampl , interp1 , 
@@ -88,18 +92,6 @@ class projectors:
         self.angles       = angles.astype( myfloat )
         self.param_nofilt = param_nofilt.astype( myfloat )
         self.param_filt   = param_filt.astype( myfloat )
-
-        
-        ##  Overview of the projector settings
-        print('\nSetting of the regridding projectors:')
-        print('Kernel type: ', kernel)
-        print('Oversampling: ', oversampl)
-        print('Interpolation:', interp)
-        print('LUT resolution: ', len( self.lut ))
-        print('Kernel size: ' , W)
-        print('Approx. error of LUT: ', errs)
-        print('Filter for backprojection: ' , filter_list[filt,0])
-        print('Radon transform degree: ', radon_degree)
     
 
     
