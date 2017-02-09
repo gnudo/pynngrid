@@ -29,10 +29,11 @@ The simplest way to install all the code is to use Anaconda with python-2.7 and 
 add the installation of the python package scipy, scikit-image and Cython.
 
 On a terminal, just type:
-1) conda create -n iter-rec python=2.7 anaconda;
-2) conda install -n iter-rec scipy scikit-image Cython;
-3) source activate iter-rec;
-4) download the repo and type: python setup.py;
+
+1.   `conda create -n iter-rec python=2.7 anaconda`
+2.   `conda install -n iter-rec scipy scikit-image Cython`
+3.   `source activate iter-rec`
+4.   download the repo and type: `python setup.py`
 
 If setup.py runs without giving any error all subroutines in C have been installed and
 your python version meets all dependencies.
@@ -40,7 +41,7 @@ your python version meets all dependencies.
 
 
 ##  Test the package
-Go inside the folder "scripts/" and run: python run_all_tests.py
+Go inside the folder "tests/" and run: `python run_test.py`
 Every time this script creates an image, the script is halted. To run the successive tests
 just close the image.
 
