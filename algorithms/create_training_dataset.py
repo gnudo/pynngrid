@@ -196,9 +196,9 @@ def main():
         np.save( fileout , train_data )
         print( '\nTraining data saved in:\n', fileout ) 
         
-        filename = file_list[0][i]
-        fileout  = train_path + filename[:len(filename)-4] + '_reco.DMP'        
-        io.writeImage( fileout , reco_hq )
+        #filename = file_list[0][i]
+        #fileout  = train_path + filename[:len(filename)-4] + '_reco.DMP'        
+        #io.writeImage( fileout , reco_hq )
         
     print( '\n' )   
     
