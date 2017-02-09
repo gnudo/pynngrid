@@ -53,7 +53,7 @@ myint = np.int
 ##########################################################
 ##########################################################
 
-def reconstr_filter_custom( sino , angles , ctr , filt_custom , picked ):
+def reconstr_filter_custom( sino , angles , ctr , filt_custom , picked  , nhh , l ):
     ##  Prepare filter
     n         = len( filt_custom )
     nh        = np.int( 0.5 * n )
@@ -62,9 +62,13 @@ def reconstr_filter_custom( sino , angles , ctr , filt_custom , picked ):
       
     ##  Reconstruction
     reco = utils.fbp( sino , angles , [ctr,0.0] , filt )
+    #import myImageDisplay as dis
+    #dis.plot( reco , 'Reconstr j='+str(ind) )
     
     ##  Pick up only selected pixels
-    reco = reco[ picked ]
+    #reco = reco[ picked ]  
+
+    reco = reco[nhh-l:nhh+l,nhh-l:nhh+l].reshape( -1 )
     
     return reco
 
@@ -143,6 +147,7 @@ def main():
 
     ##  Region of interest to select training data
     idx = utils.getIDX( npix , roi_l , roi_r , roi_b , roi_t )
+    nh = np.int( npix * 0.5 );  l   = np.abs( roi_l )
     
     
     ##  Create training dataset 
@@ -167,28 +172,33 @@ def main():
         picked = utils.getPickedIndices( idx , npix_train_slice )
         
         ##  Save validation data
-        train_data[:,-1] = reco_hq[picked]
+        #train_data[:,-1] = reco_hq[picked]
+        train_data[:,-1] = reco_hq[nh-l:nh+l,nh-l:nh+l].reshape( -1 )
         
         ##  Downsample sinogram
         sino_lq , angles_lq = utils.downsample_sinogram_angles( sino_hq , angles , nang_lq )
         
         ##  Reconstruct low-quality sinograms with customized filters
-        pool = mproc.Pool( processes=ncores )
-        results = [ pool.apply_async( reconstr_filter_custom , 
-                                      args=( sino_lq , angles_lq , ctr_hq , filt_custom[j,:] , picked ) ) \
-                                      for j in range( nfilt ) ]
-        train_data[:,:nfilt] = np.array( [ res.get() for res in results ] ).reshape( npix_train_slice , nfilt )
-        pool.close()
-        pool.join()
+        #pool = mproc.Pool( processes=ncores )
+        #results = [ pool.apply_async( reconstr_filter_custom , 
+        #                              args=( sino_lq , angles_lq , ctr_hq , filt_custom[j,:] , picked ) ) \
+        #                              for j in range( nfilt ) ]
+        #train_data[:,:nfilt] = np.array( [ res.get() for res in results ] ).reshape( npix_train_slice , nfilt )
+        #pool.close()
+        #pool.join()
         
-        #for j in range( nfilt ):
-        #    train_data[:,j] = reconstr_filter_custom( sino_lq , angles_lq , ctr_hq , filt_custom[j,:] , picked )
+        for j in range( nfilt ):
+            train_data[:,j] = reconstr_filter_custom( sino_lq , angles_lq , ctr_hq , filt_custom[j,:] , picked , nh , l )
 
         ##  Save training data
         filename = file_list[0][i]
         fileout  = train_path + filename[:len(filename)-4] + '_train.npy'
         np.save( fileout , train_data )
         print( '\nTraining data saved in:\n', fileout ) 
+        
+        filename = file_list[0][i]
+        fileout  = train_path + filename[:len(filename)-4] + '_reco.DMP'        
+        io.writeImage( fileout , reco_hq )
         
     print( '\n' )   
     
